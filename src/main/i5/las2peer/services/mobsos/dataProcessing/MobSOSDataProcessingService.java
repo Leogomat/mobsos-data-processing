@@ -303,8 +303,8 @@ public class MobSOSDataProcessingService extends Service {
 
 		if (!xAPIstatements.isEmpty()) {
 			try {
-				//Context.get().invoke("i5.las2peer.services.learningLockerService.LearningLockerService@1.0.1",
-				//		"sendXAPIstatement", (Serializable) xAPIstatements);
+				Context.get().invoke("i5.las2peer.services.learningLockerService.LearningLockerService@1.0.1",
+						"sendXAPIstatement", (Serializable) xAPIstatements);
 				
 				
 				Context.getCurrent().invoke("i5.las2peer.services.socialBotManagerService.SocialBotManagerService",
