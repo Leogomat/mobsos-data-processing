@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -54,7 +55,7 @@ public class MobSOSDataProcessingService extends Service {
 	private Set<String> triggerFunctions = new HashSet<String>();
 	private ArrayList<BotMessage> botMessages = new ArrayList<BotMessage>();
 	private ArrayList<String> xAPIstatements = new ArrayList<String>();
-	//private boolean sendStatementsToBots = true; // True if xAPI statements should also be sent to the social bot manager service
+	private ArrayList<String> botStatements = new ArrayList<String>();
 
 	/**
 	 * Configuration parameters, values will be set by the configuration file.
@@ -238,9 +239,6 @@ public class MobSOSDataProcessingService extends Service {
 			// If enabled for monitoring, add service message to database
 			else if (Math.abs(message.getEvent().getCode()) >= 7000
 					&& (Math.abs(message.getEvent().getCode()) < 8000)) {
-				if (message.getRemarks().contains("actor") && message.getRemarks().contains("verb") && message.getRemarks().contains("object")) {
-					System.out.println("\u001B[33mDebug --- Ding\u001B[0m");
-				}
 				if (message.getEvent() == MonitoringEvent.SERVICE_SHUTDOWN) {
 					returnStatement = persistMessage(message, "REGISTERED_AT");
 					if (!returnStatement)
@@ -251,8 +249,8 @@ public class MobSOSDataProcessingService extends Service {
 					counter++;
 
 				if (message.getRemarks() != null) {
-					String serviceClassName = monitoredServices.get(message.getSourceAgentId());
-					System.out.println("\u001B[33mDebug --- Service Name: " + serviceClassName + "\u001B[0m");
+					//String serviceClassName = monitoredServices.get(message.getSourceAgentId());
+					//System.out.println("\u001B[33mDebug --- Service Name: " + serviceClassName + "\u001B[0m");
 					System.out.println("\u001B[33mDebug --- Source ID: " + message.getSourceAgentId() + "\u001B[0m");
 					System.out.println("\u001B[33mDebug --- Monitored: " + monitoredServices.toString() + "\u001B[0m");
 					//if (sendToLRS && serviceClassName != null
@@ -262,22 +260,36 @@ public class MobSOSDataProcessingService extends Service {
 					//						"i5.las2peer.services.onyxDataProxyService.OnyxDataProxyService@1.0.0"))) {
 						String statement = message.getRemarks();
 						if (statement.contains("actor") && statement.contains("verb") && statement.contains("object")) {
-							
 							xAPIstatements.add(statement);
 							System.out.println("Statement added");
+							
+							if (statement.contains("replied")) {
+								botStatements.add(statement);
+							}
 						}
 					//}
 					JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
 					try {
 						Object jo = p.parse(message.getRemarks());
 						if (jo instanceof JSONObject) {
-							String function = ((JSONObject) jo).getAsString("functionName");
+							JSONObject obj = (JSONObject) jo;
+							String function = obj.getAsString("functionName");
 							if (function != null && hasBot() && triggerFunctions.contains(function.toLowerCase())) {
 								BotMessage m = new BotMessage(message.getTimestamp(), message.getEvent(),
 										message.getSourceNode(), message.getSourceAgentId(),
 										message.getDestinationNode(), message.getDestinationAgentId(),
 										message.getRemarks());
 								botMessages.add(m);
+							}
+							if (obj.get("courseMap") != null && obj.get("courseMap") instanceof JSONObject) {
+								try {
+									JSONObject courseMap = (JSONObject) obj.get("courseMap");
+									Context.getCurrent().invoke("i5.las2peer.services.socialBotManagerService.SocialBotManagerService",
+											"setCourseMap", (Serializable) courseMap);
+								} catch (Exception e) {
+									
+								}
+								
 							}
 						}
 					} catch (ParseException e) {
@@ -303,12 +315,11 @@ public class MobSOSDataProcessingService extends Service {
 
 		if (!xAPIstatements.isEmpty()) {
 			try {
+				Context.getCurrent().invoke("i5.las2peer.services.socialBotManagerService.SocialBotManagerService",
+						"getXapiStatements", (Serializable) botStatements);
+				
 				Context.get().invoke("i5.las2peer.services.learningLockerService.LearningLockerService@1.0.1",
 						"sendXAPIstatement", (Serializable) xAPIstatements);
-				
-				
-				Context.getCurrent().invoke("i5.las2peer.services.socialBotManagerService.SocialBotManagerService",
-							"getXapiStatements", (Serializable) xAPIstatements);
 				
 				
 				// TODO Handle Exceptions!
@@ -328,6 +339,7 @@ public class MobSOSDataProcessingService extends Service {
 				e.printStackTrace();
 			}
 			xAPIstatements.clear();
+			botStatements.clear();
 		}
 
 		if (!botMessages.isEmpty()) {
