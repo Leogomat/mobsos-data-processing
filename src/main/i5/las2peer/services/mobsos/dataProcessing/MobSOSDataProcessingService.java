@@ -68,6 +68,7 @@ public class MobSOSDataProcessingService extends Service {
 	private String databasePassword;
 	private boolean hashRemarks;
 	private boolean sendToLRS; // Added for LRS
+	private boolean sendXapiToBots; // Added for sending xAPI statements to bots
 	private Connection con;
 	private SQLDatabase database; // The database instance to write to.
 
@@ -311,7 +312,7 @@ public class MobSOSDataProcessingService extends Service {
 				Context.get().invoke("i5.las2peer.services.learningLockerService.LearningLockerService",
 						"sendXAPIstatement", (Serializable) xAPIstatements);
 				
-				if(sendXapiToBots) {
+				if (sendXapiToBots) {
 					Context.getCurrent().invoke("i5.las2peer.services.socialBotManagerService.SocialBotManagerService",
 								"getXapiStatements", (Serializable) xAPIstatements);
 				}
