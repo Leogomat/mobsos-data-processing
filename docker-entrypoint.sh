@@ -30,6 +30,7 @@ export MYSQL_DATABASE='LAS2PEERMON'
 [[ -z "${MYSQL_PORT}" ]] && export MYSQL_PORT='3306'
 [[ -z "${HASH_REMARKS}" ]] && export HASH_REMARKS='FALSE'
 [[ -z "${SEND_TO_LRS}" ]] && export SEND_TO_LRS='FALSE'
+[[ -z "${SEND_XAPI_TO_BOTS}" ]] && export SEND_XAPI_TO_BOTS='FALSE'
 
 # configure service properties
 
@@ -44,6 +45,8 @@ set_in_service_config databaseHost ${MYSQL_HOST}
 set_in_service_config databasePort ${MYSQL_PORT}
 set_in_service_config hashRemarks ${HASH_REMARKS}
 set_in_service_config sendToLRS ${SEND_TO_LRS}
+set_in_service_config sendXapiToBots ${SEND_XAPI_TO_BOTS}
+
 
 # ensure the database is ready
 while ! mysqladmin ping -h${MYSQL_HOST} -P${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQL_PASSWORD} --silent; do
